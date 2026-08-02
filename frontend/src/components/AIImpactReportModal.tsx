@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { ImpactReport, DigitalTwinResult } from "@/lib/api";
+import { ImpactReport, SandboxPreviewResult } from "@/lib/api";
 import { AlertTriangle, Clock, ShieldAlert, Cpu, CheckCircle2, X, AlertOctagon, Terminal } from "lucide-react";
 
 interface ImpactReportModalProps {
   report: ImpactReport | null;
-  digitalTwin: DigitalTwinResult | null;
+  sandboxPreview: SandboxPreviewResult | null;
   isOpen: boolean;
   onClose: () => void;
-  onSelectAction: (action: "recovery" | "alternative" | "digital_twin" | "override") => void;
+  onSelectAction: (action: "recovery" | "alternative" | "sandbox_preview" | "override") => void;
 }
 
 export const AIImpactReportModal: React.FC<ImpactReportModalProps> = ({
@@ -63,9 +63,9 @@ export const AIImpactReportModal: React.FC<ImpactReportModalProps> = ({
             <span className="text-sm font-bold text-red-400 mt-1.5 block uppercase">{report.recovery_complexity}</span>
           </div>
           <div className="bg-gray-900/80 border border-gray-800 p-3 rounded-xl">
-            <span className="text-[10px] text-gray-400 font-medium block">Digital Twin Clone</span>
+            <span className="text-[10px] text-gray-400 font-medium block">Sandbox Preview Clone</span>
             <span className="text-xs font-mono font-bold text-purple-400 mt-2 block truncate">
-              {digitalTwin?.cloned_environment || "Active Clone"}
+              {sandboxPreview?.sandbox_environment || "Active Clone"}
             </span>
           </div>
         </div>
@@ -123,10 +123,10 @@ export const AIImpactReportModal: React.FC<ImpactReportModalProps> = ({
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => onSelectAction("digital_twin")}
+                onClick={() => onSelectAction("sandbox_preview")}
                 className="px-3.5 py-2 bg-purple-950/60 border border-purple-800/60 hover:bg-purple-900/60 text-purple-300 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5"
               >
-                <Cpu className="w-3.5 h-3.5" /> 👯 Digital Twin Mode
+                <Cpu className="w-3.5 h-3.5" /> 🧪 Sandbox Preview
               </button>
               <button
                 onClick={() => onSelectAction("alternative")}

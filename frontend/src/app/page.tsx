@@ -43,7 +43,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#0b0f19] flex flex-col font-sans selection:bg-blue-600 selection:text-white">
-      <Header runtimeState={runtimeState} />
+      <Header runtimeState={runtimeState} systemTrust={data?.system_trust_level || "Verified"} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
         {/* Terminal Safety Heatmap & Safety Score */}
@@ -82,17 +82,17 @@ export default function Home() {
         onApplyAlternative={(altCmd) => handleEvaluate(altCmd)}
       />
 
-      {/* 📊 Impact Report Modal (Evidence, Why Interrupted, Digital Twin, Trust Mode) */}
+      {/* 📊 Impact Report Modal (Evidence, Why Interrupted, Sandbox Preview, Trust Mode) */}
       <AIImpactReportModal
         report={data?.impact_report || null}
-        digitalTwin={data?.digital_twin || null}
+        sandboxPreview={data?.sandbox_preview || null}
         isOpen={impactModalOpen}
         onClose={() => setImpactModalOpen(false)}
         onSelectAction={(action) => {
           if (action === "alternative" && data?.command_rewrites?.length) {
             handleEvaluate(data.command_rewrites[0].safe_command);
             setImpactModalOpen(false);
-          } else if (action === "digital_twin") {
+          } else if (action === "sandbox_preview") {
             setImpactModalOpen(false);
             setReplayModalOpen(true);
           } else if (action === "override") {

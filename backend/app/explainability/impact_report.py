@@ -30,17 +30,17 @@ class DecisionTreeNode(BaseModel):
     decision: str
     status: str  # PASS, WARN, BLOCK
 
-class DigitalTwinResult(BaseModel):
-    cloned_environment: str = "Linux-v6.8-Virtual-Clone"
-    virtual_execution_status: str = "SIMULATED_DESTRUCTION"
+class SandboxPreviewResult(BaseModel):
+    sandbox_environment: str = "Linux-v6.8-Isolated-Sandbox"
+    sandbox_execution_status: str = "SIMULATED_DESTRUCTION"
     modified_paths_count: int
     impacted_services_count: int
     rollback_snapshot_created: bool = True
 
 class ImpactReportGenerator:
     """
-    Impact Report Generator & Digital Twin Simulator.
-    Produces evidence-backed impact reports and virtual clone execution results.
+    Impact Report Generator & Sandbox Preview Simulator.
+    Produces evidence-backed impact reports and isolated sandbox execution previews.
     """
 
     def generate_report(
@@ -49,9 +49,9 @@ class ImpactReportGenerator:
         context: SystemContext, 
         intent: IntentAnalysis, 
         risk: AdaptiveRiskAssessment
-    ) -> tuple[ImpactReport, List[DecisionTreeNode], DigitalTwinResult]:
+    ) -> tuple[ImpactReport, List[DecisionTreeNode], SandboxPreviewResult]:
         """
-        Generates Impact Report, AI Decision Tree, and Digital Twin virtual clone execution results.
+        Generates Impact Report, Decision Tree, and Sandbox Preview execution results.
         """
         score = risk.overall_risk_score
 
@@ -85,17 +85,17 @@ class ImpactReportGenerator:
             tree_nodes.append(DecisionTreeNode(step="Recursive Traversal", decision="Flag: -r/-R active", status="WARN"))
 
         if risk.rule_decision in ["WARN", "BLOCK"]:
-            tree_nodes.append(DecisionTreeNode(step="Rule Engine Check", decision=f"Rule: {risk.rule_violations[0] if risk.rule_violations else 'Policy'}", status=risk.rule_decision))
+            tree_nodes.append(DecisionTreeNode(step="Rule Engine Policy", decision=f"Policy Action: {risk.rule_decision}", status=risk.rule_decision))
 
         final_status = risk.rule_decision if risk.rule_decision != "PASS" else ("BLOCK" if risk.requires_confirmation else "PASS")
-        tree_nodes.append(DecisionTreeNode(step="Final Decision Authority", decision=f"Status: {final_status} ({risk.threat_level})", status=final_status))
+        tree_nodes.append(DecisionTreeNode(step="Safety Engine Decision", decision=f"Status: {final_status} ({risk.threat_level})", status=final_status))
 
-        # Digital Twin Result
-        digital_twin = DigitalTwinResult(
+        # Sandbox Preview Result
+        sandbox_preview = SandboxPreviewResult(
             modified_paths_count=risk.affected_files_count or 1,
             impacted_services_count=len(context.impacted_services)
         )
 
-        return impact_report, tree_nodes, digital_twin
+        return impact_report, tree_nodes, sandbox_preview
 
 impact_report_generator = ImpactReportGenerator()

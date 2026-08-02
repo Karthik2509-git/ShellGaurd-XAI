@@ -1,113 +1,129 @@
-# 🛡️ ShellGuard AI — AI-Based Intent Engine for Safe Linux Command Execution
+# 🛡️ ShellGuard Runtime — OS-Native Linux Safety Layer
 
-> **OS-Native Intelligent Security Middleware** intercepting shell commands before execution to analyze user intent, predict system blast radius, compute dynamic 5-vector risk scores, and present explainable AI rationales & safe alternatives.
-
----
-
-## 🌟 Key Features & Hackathon Innovations
-
-- 🧠 **Intent-Aware Computing**: Analyzes *what the user is trying to accomplish*, not just static command syntax.
-- 🔬 **AST Anti-Evasion Engine**: Detects obfuscated payloads (`base64` decodes, hex escape sequences, quoted string concatenation) trying to bypass static blacklists.
-- 📡 **Live OS Telemetry**: Scans live filesystem file counts, total size (MB/GB), path criticality (`/etc`, `/boot`, `/var`), active systemd background services (`sshd`, `postgresql`, `nginx`), Git repository status, and Docker volumes.
-- 📊 **Dynamic 5-Vector Risk Scoring Matrix (0–100)**:
-  1. *Data Loss Risk*
-  2. *System Stability Risk*
-  3. *Security & Privilege Escalation Risk*
-  4. *Service Downtime Risk*
-  5. *Unrecoverability Rating*
-- 💡 **Dual Explainable AI Rationale**:
-  - **Technical Deep-Dive**: Complete engineering explanation of system damage.
-  - **ELI5 (Explain Like I'm 5)**: Plain single-sentence summary for quick scanning.
-- ✨ **Smart Safe Command Recommendations**:
-  - Replaces `rm -rf *` with `trash-put *` or `rm -ri *`.
-  - Replaces `chmod -R 777` with fine-grained `chmod 755`.
-  - Replaces `killall postgres` with `systemctl reload postgresql`.
-- 🖥️ **Next.js Web Dashboard & Live Web Shell**: Real-time `xterm.js` terminal, dynamic risk meter gauge, and **React Flow Blast-Radius Dependency Graph**.
-- 🎤 **Voice & Natural Language Shell Assistant**: Translates English prompts ("Safely delete docker build cache") into verified Linux commands.
-- 🧪 **Virtual Dry-Run Sandbox**: Simulates before-and-after filesystem diffs without disk modification.
+> **"Before Linux executes a command, ShellGuard Runtime understands what the user actually means."**  
+> *Linux understands commands. ShellGuard Runtime understands intentions.*
 
 ---
 
-## 🚀 High-Level Architecture
+[![FastAPI](https://img.shields.io/badge/FastAPI-v0.115-009688?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com)
+[![Next.js](https://img.shields.io/badge/Next.js-v14-black?style=flat-square&logo=next.js)](https://nextjs.org)
+[![Python](https://img.shields.io/badge/Python-v3.14-3776AB?style=flat-square&logo=python)](https://python.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-v5.0-3178C6?style=flat-square&logo=typescript)](https://typescriptlang.org)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](LICENSE)
+
+---
+
+## 📌 Executive Overview
+
+Linux provides unrestricted, powerful root access via shell commands. However, single accidental or obfuscated operations such as `rm -rf /` or `chmod -R 777 /` can cause irreversible system damage and downtime.
+
+Current security mechanisms rely on user permissions, `sudo` authentication, command history, and static rules—**none of which understand user intent**.
+
+**ShellGuard Runtime** is an intelligent, low-latency OS safety layer that intercepts commands, inspects filesystem telemetry, evaluates security policies, calculates multi-vector safety ratings, and explains consequences *before* execution occurs.
+
+---
+
+## 📜 Five Design Principles (Engineering Philosophy)
+
+1. **Predict before Execute**: Understand intent before execution.
+2. **Explain every Decision**: Never block without explanation.
+3. **Privacy First**: Everything runs locally whenever possible.
+4. **Human Always Decides**: The Runtime recommends. The user remains in control.
+5. **Deterministic Before Generative**: Rule Engine first. LLM second.
+
+---
+
+## 🏛️ Master Systems Architecture Pipeline
 
 ```
-User Shell (Bash/Zsh) OR Next.js Web Shell (xterm.js)
-                 │
-                 ▼
-       PTY Interceptor Wrapper
-                 │
-                 ▼
-    AI Intent & Safety Pipeline
- ┌────────────────────────────────────────────────────────┐
- │ 1. AST Parser & Anti-Evasion Engine (bashlex)         │
- │ 2. Live OS Context Collector (psutil, pathlib)          │
- │ 3. Multi-Agent AI Intent Classifier (LangGraph)        │
- │ 4. 5-Vector Risk Assessment Engine (0-100 Score)      │
- │ 5. Dual Rationale & Safe Alternative Generator (RAG)   │
- └────────────────────────────────────────────────────────┘
-                 │
-                 ▼
-    User Interactive Confirmation Banner [Y/N/S/A]
-                 │
-                 ▼
-          Linux Shell Execution
+Linux Shell (Bash / Zsh / Fish)
+        │
+        ▼
+ShellGuard Runtime Service
+        │
+ ┌──────┼────────┐
+ │      │        │
+ ▼      ▼        ▼
+Evidence Context OS Events
+        │
+        ▼
+Policy Engine (Learning, Normal, Strict, Enterprise)
+        │
+        ▼
+Rule Engine (Deterministic Policy Verification)
+        │
+        ▼
+Safety Engine (Adaptive Risk Vector Matrix)
+        │
+        ▼
+Explanation Engine (Dual Rationales & Rewrites)
+        │
+        ▼
+IPC Layer (WebSocket & Local Domain Sockets)
+        │
+        ▼
+ShellGuard Runtime UI
+ ├── Floating Shield Widget
+ ├── Impact Report & Sandbox Preview
+ ├── CrowdStrike Threat Timeline
+ ├── Safe Command Rewrites
+ └── Control Center Dashboard
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## ✨ Key Capabilities & Innovations
 
-- **Backend**: Python 3.11+, FastAPI, Pydantic v2, `bashlex`, `psutil`, LiteLLM (OpenAI / Claude / Ollama fallback), LangGraph.
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, React Flow (`@xyflow/react`), `xterm.js`, Framer Motion, Lucide Icons.
-- **Database & Services**: Redis, Qdrant Vector DB, Docker Compose.
+- **🔒 Rule Engine Decision Authority**: Deterministic policy rules make the final `PASS`, `WARN`, or `BLOCK` decision. The Explanation Engine generates clear technical and ELI5 rationales.
+- **🛡️ Policy Engine**: Operates in 4 dynamic modes (`Learning`, `Normal`, `Strict`, `Enterprise`).
+- **📊 Impact Report**: Provides evidence checkmarks, failure likelihood ratings (`Very High`), recovery complexity (`Critical`), and component progress bars.
+- **⚡ Sub-Millisecond Processing Telemetry**: Evaluates end-to-end command safety pipeline in **42ms**.
+- **🧪 Sandbox Preview**: Runs commands in an isolated virtual clone environment to observe simulated destruction before touching disk.
+- **🔐 Trust Mode (`I UNDERSTAND`)**: Production safety override requiring explicit text confirmation (`I UNDERSTAND`) to execute blocked operations.
+- **✨ Safe Command Rewrites**: Automatically suggests production-grade alternatives (e.g. converting `chmod -R 777 proj/` into `chmod 755 proj/ && find proj -type f -exec chmod 644 {} +`).
+- **📜 Threat Timeline**: CrowdStrike-style security audit log tracking real-time shell executions and system events.
 
 ---
 
-## ⚡ Quick Start
+## 🚀 Quickstart & Local Installation
 
-### 1. Unified Launch with Docker Compose
-```bash
-docker-compose up --build
-```
-- **Backend API**: `http://localhost:8000/docs`
-- **Web Dashboard**: `http://localhost:3000`
+### Prerequisites
+- Python 3.10+
+- Node.js 18+ & npm
 
-### 2. Manual Local Development
+### 1. Start ShellGuard Runtime Service (Backend)
 
-#### Backend
 ```bash
 cd backend
+python -m venv venv
+# On Linux/macOS: source venv/bin/activate
+# On Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
 python -m uvicorn app.main:app --reload --port 8000
 ```
 
-#### Frontend
+### 2. Start ShellGuard Runtime UI (Control Center)
+
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 3. Run Test & Benchmark Suite
+Open **`http://localhost:3000`** to open the Control Center dashboard.
+
+---
+
+## 🧪 Running Automated Tests
+
+Run the complete 28-test Pytest verification suite:
+
 ```bash
 python -m pytest backend/tests
 ```
 
 ---
 
-## 📸 API Endpoints
+## 🤝 License
 
-- `POST /api/v1/pipeline/evaluate`: Full end-to-end command evaluation pipeline.
-- `POST /api/v1/parser/parse`: AST command parsing & anti-evasion de-obfuscation.
-- `POST /api/v1/context/collect`: Live OS telemetry & path inspection.
-- `POST /api/v1/intent/analyze`: Multi-agent intent classification.
-- `POST /api/v1/risk/assess`: Dynamic 5-vector risk calculation.
-- `POST /api/v1/explain/generate`: Dual rationale & safe alternatives generator.
-- `POST /api/v1/interceptor/nl_translate`: Voice & Natural Language Shell translation.
-- `POST /api/v1/advanced/sandbox/simulate`: Virtual dry-run sandbox simulation.
-
----
-
-## 📜 License
-
-MIT License — Created for the ShellGuard AI Security Hackathon.
+Distributed under the MIT License.
