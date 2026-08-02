@@ -14,7 +14,7 @@ interface ImpactReportModalProps {
 
 export const AIImpactReportModal: React.FC<ImpactReportModalProps> = ({
   report,
-  digitalTwin,
+  sandboxPreview,
   isOpen,
   onClose,
   onSelectAction,
