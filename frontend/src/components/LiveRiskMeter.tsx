@@ -67,10 +67,12 @@ export const LiveRiskMeter: React.FC<LiveRiskMeterProps> = ({ data, loading }) =
       {/* Header & Threat Badge */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Adaptive Risk Assessment</span>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">Risk Assessment</span>
           <div className="flex items-baseline gap-3 mt-1">
-            <span className="text-4xl font-black text-white">{overall_risk_score}</span>
-            <span className="text-sm text-gray-400">/ 100</span>
+            <span className="text-4xl font-black text-white">
+              {overall_risk_score === 0 ? "Minimal" : overall_risk_score}
+            </span>
+            {overall_risk_score > 0 && <span className="text-sm text-gray-400">/ 100</span>}
             <span className={`text-xs px-3 py-1 rounded-full font-bold border ${getThreatBadge(threat_level)}`}>
               ● {threat_level} THREAT
             </span>

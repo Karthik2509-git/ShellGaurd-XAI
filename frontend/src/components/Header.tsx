@@ -1,14 +1,21 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, Activity, Cpu, Layers, HardDrive, Shield } from "lucide-react";
+import { ShieldCheck, Activity, Cpu, HardDrive, Shield, Info, Sliders } from "lucide-react";
 
 interface HeaderProps {
   runtimeState?: "Watching" | "Analyzing" | "Warning" | "Blocking" | "Healthy";
   systemTrust?: string;
+  onOpenDiagnostics?: () => void;
+  onOpenAbout?: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({ runtimeState = "Watching", systemTrust = "Verified" }) => {
+export const Header: React.FC<HeaderProps> = ({
+  runtimeState = "Watching",
+  systemTrust = "Verified",
+  onOpenDiagnostics,
+  onOpenAbout,
+}) => {
   const getStateStyle = (st: string) => {
     switch (st) {
       case "Blocking":
@@ -35,42 +42,53 @@ export const Header: React.FC<HeaderProps> = ({ runtimeState = "Watching", syste
                 ShellGuard Runtime
               </h1>
               <span className="text-[10px] text-blue-400 font-mono bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 rounded-full">
-                v2.0 OS Layer
+                v1.0 RC1
               </span>
             </div>
             <p className="text-[11px] text-gray-400">OS Safety Layer & Telemetry Interceptor</p>
           </div>
         </div>
 
-        {/* Commercial Runtime Health Telemetry Bar */}
-        <div className="hidden lg:flex items-center gap-4 bg-gray-950/80 border border-gray-800 px-4 py-1.5 rounded-xl text-xs font-mono">
-          <div className="flex items-center gap-1.5 text-gray-300">
-            <Shield className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-gray-500">Protection:</span> <span className="text-emerald-400 font-bold">Active</span>
+        {/* Commercial Telemetry & Action Buttons */}
+        <div className="flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-4 bg-gray-950/80 border border-gray-800 px-4 py-1.5 rounded-xl text-xs font-mono">
+            <div className="flex items-center gap-1.5 text-gray-300">
+              <Shield className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-gray-500">Protection:</span> <span className="text-emerald-400 font-bold">Online</span>
+            </div>
+            <span className="text-gray-700">|</span>
+            <div className="text-gray-300">
+              <span className="text-gray-500">Mode:</span> <span className="text-blue-400 font-bold">Normal</span>
+            </div>
+            <span className="text-gray-700">|</span>
+            <div className="flex items-center gap-1 text-gray-300">
+              <Activity className="w-3.5 h-3.5 text-purple-400" />
+              <span className="text-gray-500">Trust:</span> <span className="text-emerald-300 font-bold">{systemTrust}</span>
+            </div>
           </div>
-          <span className="text-gray-700">|</span>
-          <div className="text-gray-300">
-            <span className="text-gray-500">Mode:</span> <span className="text-blue-400 font-bold">Normal</span>
-          </div>
-          <span className="text-gray-700">|</span>
-          <div className="flex items-center gap-1 text-gray-300">
-            <Activity className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-gray-500">Trust Level:</span> <span className="text-emerald-300 font-bold">{systemTrust}</span>
-          </div>
-          <span className="text-gray-700">|</span>
-          <div className="flex items-center gap-1 text-gray-300">
-            <Cpu className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-gray-500">Active Shells:</span> <span className="text-gray-200">Watching</span>
-          </div>
-        </div>
 
-        {/* Dynamic Runtime State Badge */}
-        <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${getStateStyle(runtimeState)}`}>
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-current"></span>
-          </span>
-          <span>State: {runtimeState}</span>
+          <button
+            onClick={onOpenDiagnostics}
+            className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Sliders className="w-3.5 h-3.5 text-blue-400" /> Diagnostics
+          </button>
+
+          <button
+            onClick={onOpenAbout}
+            className="px-3 py-1.5 bg-gray-900 hover:bg-gray-800 border border-gray-800 text-gray-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors"
+          >
+            <Info className="w-3.5 h-3.5 text-purple-400" /> About
+          </button>
+
+          {/* Dynamic Runtime State Badge */}
+          <div className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-bold ${getStateStyle(runtimeState)}`}>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-current opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-current"></span>
+            </span>
+            <span>State: {runtimeState}</span>
+          </div>
         </div>
       </div>
 

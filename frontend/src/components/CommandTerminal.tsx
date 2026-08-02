@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Terminal, Send, Sparkles, AlertOctagon, Eye } from "lucide-react";
-import { evaluateCommand, translateNaturalLanguage, CommandEvaluationResponse } from "@/lib/api";
+import { Terminal, Send, Sparkles, AlertOctagon, Eye, Play, Shield } from "lucide-react";
+import { evaluateCommand, translateNaturalLanguage, getPresentationScenarios, CommandEvaluationResponse } from "@/lib/api";
 
 interface CommandTerminalProps {
   onEvaluateCommand: (command: string) => void;
@@ -11,9 +11,13 @@ interface CommandTerminalProps {
 
 export const CommandTerminal: React.FC<CommandTerminalProps> = ({ onEvaluateCommand, loading }) => {
   const [commandInput, setCommandInput] = useState<string>("sudo rm -rf /var/log/*");
-  const [nlInput, setNlInput] = useState<string>("");
-  const [nlTranslating, setNlTranslating] = useState<boolean>(false);
+  const [presentationMode, setPresentationMode] = useState<boolean>(true);
+  const [scenarios, setScenarios] = useState<Array<any>>([]);
   const [livePreview, setLivePreview] = useState<CommandEvaluationResponse | null>(null);
+
+  useEffect(() => {
+    getPresentationScenarios().then(setScenarios);
+  }, []);
 
   // Live As-You-Type Command Estimation without pressing Enter
   useEffect(() => {
@@ -41,33 +45,10 @@ export const CommandTerminal: React.FC<CommandTerminalProps> = ({ onEvaluateComm
     }
   };
 
-  const handleNLSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nlInput.trim()) return;
-    setNlTranslating(true);
-    try {
-      const result = await translateNaturalLanguage(nlInput.trim());
-      setCommandInput(result.generated_command);
-      onEvaluateCommand(result.generated_command);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setNlTranslating(false);
-    }
-  };
-
-  const sampleCommands = [
-    { label: "sudo rm -rf /var/log/*", risk: "CRITICAL" },
-    { label: "chmod -R 777 /etc", risk: "HIGH" },
-    { label: "systemctl stop postgresql", risk: "CAUTION" },
-    { label: "echo c3VkbyBybSAtcmYgLw== | base64 -d | sh", risk: "CRITICAL" },
-    { label: "trash-put notes.txt", risk: "SAFE" },
-  ];
-
   return (
     <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 space-y-6">
-      {/* Title Bar */}
-      <div className="flex items-center justify-between border-b border-gray-800 pb-4">
+      {/* Title Bar & Presentation Mode Switch */}
+      <div className="flex flex-wrap items-center justify-between border-b border-gray-800 pb-4 gap-2">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5">
             <span className="w-3 h-3 rounded-full bg-red-500/80 inline-block" />
@@ -76,9 +57,19 @@ export const CommandTerminal: React.FC<CommandTerminalProps> = ({ onEvaluateComm
           </div>
           <span className="text-xs font-mono text-gray-400 ml-2">bash - shellguard-runtime</span>
         </div>
-        <span className="text-[10px] text-emerald-400 font-mono flex items-center gap-1">
-          <Eye className="w-3 h-3 animate-pulse" /> Live As-You-Type Estimation Active
-        </span>
+
+        {/* Presentation Mode Toggle */}
+        <button
+          onClick={() => setPresentationMode(!presentationMode)}
+          className={`px-3 py-1 rounded-xl text-xs font-bold font-mono transition-colors flex items-center gap-1.5 border ${
+            presentationMode
+              ? "bg-purple-950/80 text-purple-300 border-purple-800"
+              : "bg-gray-900 text-gray-400 border-gray-800"
+          }`}
+        >
+          <Shield className="w-3.5 h-3.5" />
+          {presentationMode ? "Presentation Mode: Active" : "Live Execution Mode"}
+        </button>
       </div>
 
       {/* Terminal Input Form */}
@@ -110,7 +101,7 @@ export const CommandTerminal: React.FC<CommandTerminalProps> = ({ onEvaluateComm
         <div className="bg-gray-900/90 border border-gray-800 rounded-xl p-3.5 space-y-2 text-xs">
           <div className="flex items-center justify-between">
             <span className="font-bold text-gray-300 flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-blue-400" /> Live As-You-Type Estimation:
+              <Eye className="w-3.5 h-3.5 text-blue-400" /> Real-time Keystroke Analysis:
             </span>
             <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
               livePreview.risk.threat_level === "CRITICAL" ? "bg-red-950 text-red-400 border-red-800" :
@@ -129,11 +120,11 @@ export const CommandTerminal: React.FC<CommandTerminalProps> = ({ onEvaluateComm
             </div>
             <div className="bg-gray-950 p-2 rounded border border-gray-800">
               <span className="text-gray-500 block">Est. Files Affected</span>
-              <span className="font-semibold text-amber-400 block">{livePreview.ai_impact_report?.estimated_files || 0} Files</span>
+              <span className="font-semibold text-amber-400 block">{livePreview.impact_report?.estimated_files || 0} Files</span>
             </div>
             <div className="bg-gray-950 p-2 rounded border border-gray-800">
-              <span className="text-gray-500 block">Est. Repair Time</span>
-              <span className="font-semibold text-blue-400 block">{livePreview.ai_impact_report?.estimated_repair_time || "0 mins"}</span>
+              <span className="text-gray-500 block">System Trust</span>
+              <span className="font-semibold text-emerald-400 block">{livePreview.system_trust_level}</span>
             </div>
             <div className="bg-gray-950 p-2 rounded border border-gray-800">
               <span className="text-gray-500 block">Undo Capability</span>
@@ -145,21 +136,25 @@ export const CommandTerminal: React.FC<CommandTerminalProps> = ({ onEvaluateComm
         </div>
       )}
 
-      {/* Quick Test Presets */}
+      {/* Presentation Preloaded Scenarios Switcher */}
       <div>
-        <span className="text-[11px] font-bold text-gray-400 block mb-2 uppercase tracking-wider">Quick Presets:</span>
+        <span className="text-[11px] font-bold text-gray-400 block mb-2 uppercase tracking-wider">
+          {presentationMode ? "🎬 Preloaded Presentation Scenarios:" : "Quick Test Presets:"}
+        </span>
         <div className="flex flex-wrap gap-2">
-          {sampleCommands.map((item, idx) => (
+          {scenarios.map((sc, idx) => (
             <button
               key={idx}
               onClick={() => {
-                setCommandInput(item.label);
-                onEvaluateCommand(item.label);
+                setCommandInput(sc.command);
+                onEvaluateCommand(sc.command);
               }}
               className="text-xs font-mono bg-gray-900 hover:bg-gray-800 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-800 transition-colors flex items-center gap-2"
             >
-              <span>{item.label}</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-bold">{item.risk}</span>
+              <span>{sc.command}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-400 font-bold">
+                {sc.expected_threat_level}
+              </span>
             </button>
           ))}
         </div>

@@ -13,6 +13,9 @@ import { SafetyHeatmap } from "@/components/SafetyHeatmap";
 import { ProcessingTimeline } from "@/components/ProcessingTimeline";
 import { SafetyReplayModal } from "@/components/SafetyReplayModal";
 import { FloatingAssistant } from "@/components/FloatingAssistant";
+import { DiagnosticsModal } from "@/components/DiagnosticsModal";
+import { AboutModal } from "@/components/AboutModal";
+import { StartupSplash } from "@/components/StartupSplash";
 import { evaluateCommand, CommandEvaluationResponse } from "@/lib/api";
 
 export default function Home() {
@@ -20,6 +23,8 @@ export default function Home() {
   const [loading, setLoading] = useState<boolean>(false);
   const [impactModalOpen, setImpactModalOpen] = useState<boolean>(false);
   const [replayModalOpen, setReplayModalOpen] = useState<boolean>(false);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState<boolean>(false);
+  const [aboutOpen, setAboutOpen] = useState<boolean>(false);
   const [currentCommand, setCurrentCommand] = useState<string>("sudo rm -rf /var/log/*");
 
   const handleEvaluate = async (command: string) => {
@@ -28,6 +33,14 @@ export default function Home() {
     try {
       const res = await evaluateCommand(command);
       setData(res);
+
+      // Smart Notification Tiering
+      // SAFE: Quiet (No modal)
+      // CAUTION / HIGH: Handled in UI card
+      // CRITICAL: Auto-trigger Impact Report Modal
+      if (res.risk.threat_level === "CRITICAL") {
+        setImpactModalOpen(true);
+      }
     } catch (err) {
       console.error("Evaluation error:", err);
     } finally {
@@ -39,11 +52,25 @@ export default function Home() {
     handleEvaluate("sudo rm -rf /var/log/*");
   }, []);
 
-  const runtimeState = loading ? "Analyzing" : data?.risk.threat_level === "CRITICAL" ? "Blocking" : data?.risk.threat_level === "HIGH" ? "Warning" : "Watching";
+  const runtimeState = loading
+    ? "Analyzing"
+    : data?.risk.threat_level === "CRITICAL"
+    ? "Blocking"
+    : data?.risk.threat_level === "HIGH"
+    ? "Warning"
+    : "Watching";
 
   return (
     <div className="min-h-screen bg-[#0b0f19] flex flex-col font-sans selection:bg-blue-600 selection:text-white">
-      <Header runtimeState={runtimeState} systemTrust={data?.system_trust_level || "Verified"} />
+      {/* Startup 2-Second Card */}
+      <StartupSplash />
+
+      <Header
+        runtimeState={runtimeState}
+        systemTrust={data?.system_trust_level || "Verified"}
+        onOpenDiagnostics={() => setDiagnosticsOpen(true)}
+        onOpenAbout={() => setAboutOpen(true)}
+      />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
         {/* Terminal Safety Heatmap & Safety Score */}
@@ -82,7 +109,7 @@ export default function Home() {
         onApplyAlternative={(altCmd) => handleEvaluate(altCmd)}
       />
 
-      {/* 📊 Impact Report Modal (Evidence, Why Interrupted, Sandbox Preview, Trust Mode) */}
+      {/* 📊 Impact Report Modal */}
       <AIImpactReportModal
         report={data?.impact_report || null}
         sandboxPreview={data?.sandbox_preview || null}
@@ -108,8 +135,14 @@ export default function Home() {
         onClose={() => setReplayModalOpen(false)}
       />
 
+      {/* 🩺 Runtime Diagnostics Modal */}
+      <DiagnosticsModal isOpen={diagnosticsOpen} onClose={() => setDiagnosticsOpen(false)} />
+
+      {/* ℹ️ About Dialog Modal */}
+      <AboutModal isOpen={aboutOpen} onClose={() => setAboutOpen(false)} />
+
       <footer className="border-t border-gray-800 py-6 text-center text-xs text-gray-500 bg-[#0d1322]/50">
-        ShellGuard Runtime • OS Safety Layer & Security Interceptor • Production Quality
+        ShellGuard Runtime v1.0 RC1 • OS Safety Layer & Telemetry Interceptor • Production Quality
       </footer>
     </div>
   );
