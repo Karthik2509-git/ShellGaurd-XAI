@@ -5,7 +5,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     PROJECT_NAME: str = "ShellGuard Runtime"
     ENGINE_NAME: str = "ShellGuard AI Engine"
-    VERSION: str = "2.0.0"
+    VERSION: str = "1.0.0-rc1"
+    BUILD_NUMBER: str = "20260803.1"
+    COMMIT_HASH: str = "ae01fbc"
+    RELEASE_CHANNEL: str = "stable-rc"
     API_V1_STR: str = "/api/v1"
 
     HOST: str = "0.0.0.0"

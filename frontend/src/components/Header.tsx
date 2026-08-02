@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
                 ShellGuard Runtime
               </h1>
               <span className="text-[10px] text-blue-400 font-mono bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 rounded-full">
-                v1.0 RC1
+                v1.0.0-rc1
               </span>
             </div>
             <p className="text-[11px] text-gray-400">OS Safety Layer & Telemetry Interceptor</p>
