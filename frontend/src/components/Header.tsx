@@ -1,11 +1,13 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, Activity, Cpu, HardDrive, Shield, Info, Sliders } from "lucide-react";
+import { ShieldCheck, Activity, Shield, Info, Sliders } from "lucide-react";
+import { TraySystemBar } from "@/components/TraySystemBar";
 
 interface HeaderProps {
   runtimeState?: "Watching" | "Analyzing" | "Warning" | "Blocking" | "Healthy";
   systemTrust?: string;
+  threatLevel?: string;
   onOpenDiagnostics?: () => void;
   onOpenAbout?: () => void;
 }
@@ -13,8 +15,9 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   runtimeState = "Watching",
   systemTrust = "Verified",
-  onOpenDiagnostics,
-  onOpenAbout,
+  threatLevel = "SAFE",
+  onOpenDiagnostics = () => {},
+  onOpenAbout = () => {},
 }) => {
   const getStateStyle = (st: string) => {
     switch (st) {
@@ -42,19 +45,26 @@ export const Header: React.FC<HeaderProps> = ({
                 ShellGuard Runtime
               </h1>
               <span className="text-[10px] text-blue-400 font-mono bg-blue-950/60 border border-blue-800/60 px-2 py-0.5 rounded-full">
-                v1.0.0-rc1
+                v1.0.0-rc2
               </span>
             </div>
-            <p className="text-[11px] text-gray-400">OS Safety Layer & Telemetry Interceptor</p>
+            <p className="text-[11px] text-gray-400">OS Safety Layer & Background Telemetry Service</p>
           </div>
         </div>
 
-        {/* Commercial Telemetry & Action Buttons */}
+        {/* System Tray & Actions */}
         <div className="flex items-center gap-3">
+          {/* Desktop Tray Applet */}
+          <TraySystemBar
+            threatLevel={threatLevel}
+            onOpenDiagnostics={onOpenDiagnostics}
+            onOpenAbout={onOpenAbout}
+          />
+
           <div className="hidden lg:flex items-center gap-4 bg-gray-950/80 border border-gray-800 px-4 py-1.5 rounded-xl text-xs font-mono">
             <div className="flex items-center gap-1.5 text-gray-300">
               <Shield className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="text-gray-500">Protection:</span> <span className="text-emerald-400 font-bold">Online</span>
+              <span className="text-gray-500">Service:</span> <span className="text-emerald-400 font-bold">systemd</span>
             </div>
             <span className="text-gray-700">|</span>
             <div className="text-gray-300">

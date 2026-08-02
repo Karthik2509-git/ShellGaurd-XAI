@@ -1,0 +1,21 @@
+[Unit]
+Description=ShellGuard Runtime — AI-Powered Linux OS Safety Layer
+Documentation=https://github.com/Karthik2509-git/ShellGaurd-XAI
+After=network.target local-fs.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/shellguard-runtime-daemon
+Restart=on-failure
+RestartSec=3s
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=%h/.local/share/shellguard-runtime
+
+# Sandbox & Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadOnlyPaths=/etc /usr /bin /sbin
+
+[Install]
+WantedBy=default.target

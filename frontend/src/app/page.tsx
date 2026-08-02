@@ -68,6 +68,7 @@ export default function Home() {
       <Header
         runtimeState={runtimeState}
         systemTrust={data?.system_trust_level || "Verified"}
+        threatLevel={data?.risk.threat_level || "SAFE"}
         onOpenDiagnostics={() => setDiagnosticsOpen(true)}
         onOpenAbout={() => setAboutOpen(true)}
       />

@@ -5,9 +5,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     PROJECT_NAME: str = "ShellGuard Runtime"
     ENGINE_NAME: str = "ShellGuard AI Engine"
-    VERSION: str = "1.0.0-rc1"
-    BUILD_NUMBER: str = "20260803.1"
-    COMMIT_HASH: str = "ae01fbc"
+    VERSION: str = "1.0.0-rc2"
+    BUILD_NUMBER: str = "20260803.2"
+    COMMIT_HASH: str = "dd9f988"
     RELEASE_CHANNEL: str = "stable-rc"
     API_V1_STR: str = "/api/v1"
 
@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     PORT: int = 8000
     DEBUG: bool = True
     ENVIRONMENT: str = "development"
+
+    # XDG Base Directory Compliance
+    XDG_CONFIG_HOME: str = os.path.expanduser("~/.config/shellguard-runtime")
+    XDG_STATE_HOME: str = os.path.expanduser("~/.local/state/shellguard-runtime")
+    XDG_CACHE_HOME: str = os.path.expanduser("~/.cache/shellguard-runtime")
 
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
@@ -36,7 +41,7 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str = ""
 
     # Adaptive Risk & Persona Settings
-    DEFAULT_PERSONA: str = "Professional"  # "Beginner" or "Professional"
+    DEFAULT_PERSONA: str = "Professional"
     DEFAULT_RISK_THRESHOLD: int = 65
     FORCE_INTERCEPT: bool = True
     PRIVACY_FIRST_LOCAL_ONLY: bool = False
