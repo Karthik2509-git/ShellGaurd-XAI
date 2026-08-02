@@ -72,8 +72,8 @@ Flags: {metadata.flags}
 Targets: {metadata.targets}
 User Intent: {intent.user_intent}
 Intent Category: {intent.category}
-Overall Risk Score: {risk.overall_risk_score}/100 ({risk.risk_level})
-Risk Vectors: Data Loss: {risk.vectors.data_loss_risk}, Stability: {risk.vectors.system_stability_risk}, Security: {risk.vectors.security_escalation_risk}, Service Downtime: {risk.vectors.service_downtime_risk}
+Overall Risk Score: {risk.overall_risk_score}/100 ({risk.threat_level})
+Risk Vectors: Data Loss: {risk.vectors.data_loss_risk}, Security: {risk.vectors.security_risk}, Service Downtime: {risk.vectors.downtime_risk}
 Affected Files: {risk.affected_files_count} files ({risk.affected_size_mb} MB)
 Impacted Services: {context.impacted_services}
 Primary Risk Factors: {risk.primary_risk_factors}
@@ -165,7 +165,7 @@ Primary Risk Factors: {risk.primary_risk_factors}
                 )
             )
 
-        tech = f"The command '{metadata.clean_command}' received a Risk Score of {risk.overall_risk_score}/100 ({risk.risk_level}). "
+        tech = f"The command '{metadata.clean_command}' received a Risk Score of {risk.overall_risk_score}/100 ({risk.threat_level}). "
         if risk.affected_files_count > 0:
             tech += f"It affects approximately {risk.affected_files_count} files ({risk.affected_size_mb} MB). "
         if context.impacted_services:

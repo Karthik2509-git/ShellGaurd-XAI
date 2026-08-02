@@ -3,8 +3,9 @@ from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "ShellGuard AI"
-    VERSION: str = "1.0.0"
+    PROJECT_NAME: str = "ShellGuard Runtime"
+    ENGINE_NAME: str = "ShellGuard AI Engine"
+    VERSION: str = "2.0.0"
     API_V1_STR: str = "/api/v1"
 
     HOST: str = "0.0.0.0"
@@ -14,14 +15,14 @@ class Settings(BaseSettings):
 
     CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://127.0.0.1:3000"]
 
-    # AI Model Defaults
+    # AI Model Defaults & Router
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
     DEFAULT_LLM_MODEL: str = "gpt-4o-mini"
     FALLBACK_LLM_MODEL: str = "ollama/qwen2.5-coder:7b"
     OLLAMA_BASE_URL: str = "http://localhost:11434"
 
-    # Qdrant Vector DB
+    # Vector DB (Qdrant)
     QDRANT_HOST: str = "localhost"
     QDRANT_PORT: int = 6333
     QDRANT_API_KEY: str = ""
@@ -31,9 +32,11 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = ""
 
-    # Security Thresholds
-    DEFAULT_RISK_THRESHOLD: int = 70
+    # Adaptive Risk & Persona Settings
+    DEFAULT_PERSONA: str = "Professional"  # "Beginner" or "Professional"
+    DEFAULT_RISK_THRESHOLD: int = 65
     FORCE_INTERCEPT: bool = True
+    PRIVACY_FIRST_LOCAL_ONLY: bool = False
 
     model_config = SettingsConfigDict(
         env_file=".env",

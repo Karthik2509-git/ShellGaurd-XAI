@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -9,20 +10,18 @@ logging.basicConfig(
     level=logging.INFO if not settings.DEBUG else logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 )
-logger = logging.getLogger("shellguard.main")
-
-from contextlib import asynccontextmanager
+logger = logging.getLogger("shellguard.runtime")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION}")
+    logger.info(f"Starting {settings.PROJECT_NAME} v{settings.VERSION} (Powered by {settings.ENGINE_NAME})")
     yield
     logger.info(f"Shutting down {settings.PROJECT_NAME}")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="AI-Based Intent Engine for Safe Linux Command Execution",
+    description="OS-Native Operating System Safety Layer & Desktop Protection System",
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan
@@ -44,8 +43,10 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 @app.get("/", summary="Root Endpoint")
 async def root():
     return {
-        "app": settings.PROJECT_NAME,
+        "runtime": settings.PROJECT_NAME,
+        "engine": settings.ENGINE_NAME,
         "version": settings.VERSION,
+        "status": "active",
         "docs": "/docs",
         "health": f"{settings.API_V1_STR}/system/health"
     }

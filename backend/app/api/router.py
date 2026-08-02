@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.endpoints import health, parse, context, intent, risk, explain, pipeline, interceptor, rag
+from app.api.endpoints import health, parse, context, intent, risk, explain, pipeline, interceptor, rag, timeline
 
 api_router = APIRouter()
 api_router.include_router(health.router, prefix="/system", tags=["System & Health"])
@@ -11,3 +11,4 @@ api_router.include_router(explain.router, prefix="/explain", tags=["Explainabili
 api_router.include_router(pipeline.router, prefix="/pipeline", tags=["Unified AI Safety Pipeline"])
 api_router.include_router(interceptor.router, prefix="/interceptor", tags=["Terminal Interceptor & Voice NL-Shell"])
 api_router.include_router(rag.router, prefix="/advanced", tags=["RAG, Sandbox & Persona Engine"])
+api_router.include_router(timeline.router, prefix="/session", tags=["Threat Timeline & User Safety Score"])
