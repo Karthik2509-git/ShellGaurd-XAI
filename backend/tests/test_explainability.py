@@ -31,5 +31,5 @@ async def test_pipeline_evaluate_api():
     assert data["metadata"]["base_command"] == "chmod"
     assert data["risk"]["overall_risk_score"] > 50
     assert "technical_rationale" in data["explanation"]
-    assert len(data["ai_command_rewrites"]) > 0
+    assert len(data["command_rewrites"]) > 0
     assert data["threat_level"] in ["HIGH", "CRITICAL"]

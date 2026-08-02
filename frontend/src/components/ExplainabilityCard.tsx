@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { CommandEvaluationResponse } from "@/lib/api";
-import { Sparkles, HelpCircle, ShieldCheck, CheckCircle2, RotateCcw, BarChart2, HardDrive } from "lucide-react";
+import { Sparkles, HelpCircle, ShieldCheck, CheckCircle2, RotateCcw, BarChart2, HardDrive, Check } from "lucide-react";
 
 interface ExplainabilityCardProps {
   data: CommandEvaluationResponse | null;
@@ -19,16 +19,16 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({
 
   if (!data) return null;
 
-  const { technical_rationale, eli5_rationale, why_dangerous_bullets, undo_playbook } = data.explanation;
+  const { technical_rationale, eli5_rationale, why_dangerous_bullets } = data.explanation;
   const { user_intent, category, intent_mismatch, mismatch_explanation } = data.intent;
-  const rewrites = data.ai_command_rewrites;
+  const rewrites = data.command_rewrites;
 
   return (
     <div className="bg-[#111827] border border-gray-800 rounded-2xl p-6 space-y-6">
       {/* Intent & Impact Report Trigger */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-4">
         <div>
-          <span className="text-xs text-gray-400 font-medium">Inferred User Intent:</span>
+          <span className="text-xs text-gray-400 font-medium">Inferred Operational Goal:</span>
           <h3 className="text-base font-bold text-white flex items-center gap-2 mt-0.5">
             <Sparkles className="w-4 h-4 text-blue-400" />
             {user_intent}
@@ -43,7 +43,7 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({
             onClick={onOpenImpactReport}
             className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
           >
-            <BarChart2 className="w-4 h-4" /> 📊 AI Impact Report
+            <BarChart2 className="w-4 h-4" /> 📊 Impact Report
           </button>
 
           {/* View Mode Toggle */}
@@ -80,7 +80,7 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({
       <div className="bg-gray-900/70 border border-gray-800/80 rounded-xl p-4 text-xs leading-relaxed text-gray-300">
         {viewMode === "technical" ? (
           <div>
-            <span className="font-semibold text-blue-400 uppercase tracking-wider block mb-1">Technical Rationale:</span>
+            <span className="font-semibold text-blue-400 uppercase tracking-wider block mb-1">Technical Safety Rationale:</span>
             {technical_rationale}
           </div>
         ) : (
@@ -91,11 +91,11 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({
         )}
       </div>
 
-      {/* ✨ AI Command Rewrites & "Why Rewrite is Better" Educational Rationale */}
+      {/* ✨ Safe Command Rewrites & "Why Selected" Evidence Checkmarks */}
       {rewrites && rewrites.length > 0 && (
         <div>
           <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-3 flex items-center gap-1.5">
-            <Sparkles className="w-4 h-4 text-emerald-400" /> ✨ AI Command Safe Rewrites & Educational Rationale
+            <Sparkles className="w-4 h-4 text-emerald-400" /> Command Safe Rewrites & Evidence Rationale
           </h4>
           <div className="space-y-3">
             {rewrites.map((rw, idx) => (
@@ -122,13 +122,20 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({
                   </div>
                 </div>
 
-                {/* Why Rewrite is Better Rationale */}
-                <div className="bg-gray-900/80 p-3 rounded-lg border border-gray-800 text-xs space-y-1">
-                  <span className="font-semibold text-emerald-400 block">Why is this rewrite better?</span>
+                {/* Evidence Checkmarks for Rewrite Selection */}
+                <div className="bg-gray-900/80 p-3 rounded-lg border border-gray-800 text-xs space-y-1.5">
+                  <span className="font-semibold text-emerald-400 block">Why was this rewrite selected?</span>
                   <p className="text-gray-300 leading-relaxed">{rw.why_better_rationale}</p>
-                  <span className="text-[10px] text-emerald-300 font-mono inline-block mt-1">
-                    Safety Benefit: {rw.safety_gain}
-                  </span>
+                  
+                  {rw.evidence_checkmarks && rw.evidence_checkmarks.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {rw.evidence_checkmarks.map((chk, cidx) => (
+                        <span key={cidx} className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                          {chk}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -136,10 +143,10 @@ export const ExplainabilityCard: React.FC<ExplainabilityCardProps> = ({
         </div>
       )}
 
-      {/* Why Dangerous Bullets */}
+      {/* Key Damage Vectors */}
       {why_dangerous_bullets && why_dangerous_bullets.length > 0 && (
         <div>
-          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Key Damage Vectors</h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-3">Key Risk Factors</h4>
           <ul className="space-y-2 text-xs">
             {why_dangerous_bullets.map((bullet, idx) => (
               <li key={idx} className="flex items-start gap-2 text-gray-300">

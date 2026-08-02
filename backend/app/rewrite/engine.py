@@ -11,18 +11,19 @@ class CommandRewriteOption(BaseModel):
     safe_command: str = Field(..., description="Transformed safe command")
     why_better_rationale: str = Field(..., description="Educational explanation of why this rewrite is superior")
     safety_gain: str = Field(..., description="Quantified safety benefit")
+    evidence_checkmarks: List[str] = Field(default_factory=list, description="Why this rewrite was selected checkmarks")
     backup_command_suggestion: Optional[str] = Field(default=None, description="Optional Backup First payload")
 
-class AICommandRewriteEngine:
+class CommandRewriteEngine:
     """
-    ✨ AI Command Rewrite Engine.
+    Command Rewrite Engine.
     Transforms dangerous commands into safe, production-grade Linux commands
-    accompanied by educational 'Why Rewrite is Better' explanations and 1-click 'Backup First' payloads.
+    accompanied by 'Why Selected' evidence checkmarks and 'Backup First' payloads.
     """
 
     def generate_rewrites(self, metadata: CommandMetadata, context: SystemContext) -> List[CommandRewriteOption]:
         """
-        Generates optimal safe command rewrites and Backup First recommendations.
+        Generates optimal safe command rewrites and evidence checkmarks.
         """
         base = metadata.base_command.lower()
         rewrites = []
@@ -32,16 +33,15 @@ class AICommandRewriteEngine:
             rewrites.append(
                 CommandRewriteOption(
                     safe_command=f"trash-put {targets_str}",
-                    why_better_rationale="Files are moved safely to the desktop trash bin instead of being permanently unlinked from the filesystem index. Fully compatible with Linux Desktop Trash.",
+                    why_better_rationale="Files are moved safely to the desktop trash bin instead of being permanently unlinked from the filesystem index.",
                     safety_gain="100% Recoverable via trash-restore",
+                    evidence_checkmarks=[
+                        "✓ Fully recoverable",
+                        "✓ Linux Desktop Trash compatible",
+                        "✓ Preserves file inode metadata",
+                        "✓ Reversible action"
+                    ],
                     backup_command_suggestion=f"tar -czf backup_before_delete_{int(context.disk_usage_percent)}.tar.gz {targets_str}"
-                )
-            )
-            rewrites.append(
-                CommandRewriteOption(
-                    safe_command=f"find {targets_str} -type f -mtime +30 -delete",
-                    why_better_rationale="Targets only files older than 30 days, preserving recent working files and directory structures.",
-                    safety_gain="Prevents accidental deletion of active project files"
                 )
             )
 
@@ -51,30 +51,16 @@ class AICommandRewriteEngine:
                 rewrites.append(
                     CommandRewriteOption(
                         safe_command=f"chmod -R 755 {target_path} && find {target_path} -type f -exec chmod 644 {{}} +",
-                        why_better_rationale="Applies secure standard Unix permissions: 755 for directories (executable bit needed for directory traversal) and 644 for files (prevents unauthorized execution of uploaded files).",
-                        safety_gain="Enforces Principle of Least Privilege"
+                        why_better_rationale="Applies secure standard Unix permissions: 755 for directories and 644 for files.",
+                        safety_gain="Enforces Principle of Least Privilege",
+                        evidence_checkmarks=[
+                            "✓ Standard POSIX permissions",
+                            "✓ Prevents arbitrary script execution",
+                            "✓ Maintains directory traversal capability"
+                        ]
                     )
                 )
 
-        elif base in ["killall", "kill"]:
-            target_svc = metadata.targets[0] if metadata.targets else "service"
-            rewrites.append(
-                CommandRewriteOption(
-                    safe_command=f"systemctl reload {target_svc}",
-                    why_better_rationale="Gracefully reloads application configuration without severing existing socket connections or destroying active worker threads.",
-                    safety_gain="Zero Downtime Service Maintenance"
-                )
-            )
-
-        elif base in ["curl", "wget"] and ("| bash" in metadata.clean_command or "| sh" in metadata.clean_command):
-            rewrites.append(
-                CommandRewriteOption(
-                    safe_command="curl -sSL <URL> -o script.sh && bash -n script.sh",
-                    why_better_rationale="Downloads script locally and performs a syntax dry-run check before executing unverified remote payloads.",
-                    safety_gain="Prevents Arbitrary Remote Code Execution (RCE)"
-                )
-            )
-
         return rewrites
 
-rewrite_engine = AICommandRewriteEngine()
+rewrite_engine = CommandRewriteEngine()

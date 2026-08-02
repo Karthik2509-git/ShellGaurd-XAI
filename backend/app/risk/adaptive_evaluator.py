@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 from app.parser.metadata_extractor import CommandMetadata
 from app.context.collector import SystemContext
 from app.intent.classifier import IntentAnalysis
+from app.runtime.rules import rule_engine
 
 logger = logging.getLogger("shellguard.risk.adaptive")
 
@@ -12,26 +13,30 @@ class RiskVectorBreakdown(BaseModel):
     data_loss_risk: float = Field(..., description="Risk of permanent file/data destruction (0-100)")
     security_risk: float = Field(..., description="Privilege escalation or unauthorized exposure risk (0-100)")
     downtime_risk: float = Field(..., description="Risk of interrupting background system services (0-100)")
-    recoverability_risk: float = Field(..., description="Unrecoverability score (0-100, higher means harder to recover)")
+    recoverability_risk: float = Field(..., description="Unrecoverability score (0-100)")
     privacy_risk: float = Field(..., description="Risk of exposing sensitive credentials/keys (0-100)")
 
 class AdaptiveRiskAssessment(BaseModel):
     overall_risk_score: int = Field(..., description="Final combined risk score between 0 and 100")
     threat_level: str = Field(..., description="SAFE (Green), CAUTION (Yellow), HIGH (Orange), or CRITICAL (Red)")
-    risk_confidence: float = Field(default=0.98, description="AI Risk Assessment confidence rating (e.g. 0.98)")
+    risk_confidence: float = Field(default=0.97, description="Risk confidence rating e.g. 0.97 (97%)")
+    failure_likelihood: str = Field(default="Low", description="Failure Likelihood: Low, Medium, High, or Very High")
+    recovery_complexity: str = Field(default="Low", description="Recovery Complexity: Low, Medium, High, or Critical")
     vectors: RiskVectorBreakdown = Field(..., description="5-Category Risk Matrix")
     primary_risk_factors: List[str] = Field(default_factory=list, description="Key drivers of risk score")
+    evidence: List[str] = Field(default_factory=list, description="Deterministic evidence checkmarks")
+    interruption_reasons: List[str] = Field(default_factory=list, description="Explicit 'Why was I interrupted' checkmarks")
     requires_confirmation: bool = Field(..., description="Flag indicating if interactive confirmation is required")
-    adaptive_penalty_applied: bool = Field(default=False, description="Flag indicating if adaptive historical penalty was added")
-    adaptive_reason: Optional[str] = Field(default=None, description="Explanation of adaptive score adjustment")
+    rule_decision: str = Field(default="PASS", description="Deterministic Rule Engine Decision: PASS, WARN, BLOCK")
+    rule_violations: List[str] = Field(default_factory=list, description="Violated deterministic security rules")
     affected_files_count: int = Field(default=0, description="Total estimated files affected")
     affected_size_mb: float = Field(default=0.0, description="Total size in MB affected")
 
 class AdaptiveRiskEngine:
     """
     Adaptive Risk Engine.
-    Dynamically adjusts risk using command history, CWD, git status, user privilege, 
-    project type, and command frequency while enforcing a 4-tier threat hierarchy.
+    Evaluates evidence checkmarks, computes 5-category risk vectors,
+    and integrates with the Deterministic Rule Engine (Final Authority).
     """
 
     CRITICAL_PATH_SCORES = {
@@ -52,8 +57,11 @@ class AdaptiveRiskEngine:
         command_history_count: int = 0
     ) -> AdaptiveRiskAssessment:
         """
-        Computes dynamic Adaptive Risk Assessment across 5 risk categories and 4 threat levels.
+        Computes Adaptive Risk Assessment with evidence checkmarks and Rule Engine Decision Authority.
         """
+        # 1. Evaluate Deterministic Security Rules (Final Authority)
+        rule_decision, rule_violations = rule_engine.evaluate_rules(metadata, context.is_root)
+
         dl = 0.0
         sec = 0.0
         dt = 0.0
@@ -61,12 +69,25 @@ class AdaptiveRiskEngine:
         priv = 0.0
 
         risk_factors = []
-        adaptive_applied = False
-        adaptive_reason = None
+        evidence_list = []
+        interruption_reasons = []
 
         base = metadata.base_command.lower()
 
-        # 1. Base Binary Analysis
+        # Evidence Collection
+        if metadata.is_recursive:
+            evidence_list.append("✓ Recursive traversal flag (-r/-R)")
+            interruption_reasons.append("✓ Recursive folder deletion active")
+
+        if metadata.is_force:
+            evidence_list.append("✓ Force flag (-f) bypassing interactive prompts")
+            interruption_reasons.append("✓ Forced deletion bypassing safety confirmation")
+
+        if metadata.is_sudo or context.is_root:
+            evidence_list.append("✓ Execution under Root/Sudo privileges")
+            interruption_reasons.append("✓ Elevated Root privileges active")
+
+        # 2. Base Binary Risk Analysis
         if base == "rm":
             dl += 40.0
             if metadata.is_recursive:
@@ -81,8 +102,8 @@ class AdaptiveRiskEngine:
             if "777" in metadata.clean_command:
                 sec += 40.0
                 risk_factors.append("Global read/write/execute permissions (chmod 777)")
-            if metadata.is_recursive:
-                sec += 20.0
+                evidence_list.append("✓ Global permissive permission mask (777)")
+                interruption_reasons.append("✓ Global read/write/execute permissions grant")
 
         elif base in ["kill", "killall", "pkill"]:
             dt += 70.0
@@ -103,16 +124,12 @@ class AdaptiveRiskEngine:
             sec += 85.0
             priv += 75.0
             risk_factors.append("Piping unverified remote web script directly into shell execution")
+            evidence_list.append("✓ Remote code execution pipe (| bash)")
+            interruption_reasons.append("✓ Remote unverified shell code pipe")
 
-        # 2. Privacy Vector (e.g. inspecting .ssh, .aws, .env, id_rsa)
+        # Target Path Inspection
         for t in metadata.targets:
-            if any(p in t for p in [".ssh", "id_rsa", ".aws", ".env", "credentials", "shadow"]):
-                priv += 80.0
-                sec += 40.0
-                risk_factors.append(f"Accessing sensitive credential/privacy path: {t}")
-
-        # 3. Critical Path Target Check
-        for t in metadata.targets:
+            evidence_list.append(f"✓ Target path = {t}")
             for crit_path, score in self.CRITICAL_PATH_SCORES.items():
                 is_match = False
                 if crit_path in ["/", "/*"]:
@@ -125,32 +142,18 @@ class AdaptiveRiskEngine:
                     dl = max(dl, float(score))
                     sec = max(sec, float(score))
                     risk_factors.append(f"Targeting critical OS system path: {crit_path}")
+                    interruption_reasons.append(f"✓ Critical OS system directory '{crit_path}' targeted")
 
-        # 4. Privilege Escalation (Sudo / Root)
-        if metadata.is_sudo or context.is_root:
-            sec += 30.0
-            risk_factors.append("Execution with Root / Sudo privileges")
+        # Privacy Check
+        for t in metadata.targets:
+            if any(p in t for p in [".ssh", "id_rsa", ".aws", ".env", "credentials", "shadow"]):
+                priv += 80.0
+                sec += 40.0
+                risk_factors.append(f"Accessing sensitive credential path: {t}")
+                evidence_list.append(f"✓ Sensitive credential file = {t}")
 
-        # 5. Obfuscation Penalty
-        if metadata.is_obfuscated:
-            sec += 50.0
-            risk_factors.append(f"Detected anti-evasion obfuscation ({metadata.obfuscation_type})")
-
-        # 6. Service Downtime Impact
-        if context.impacted_services:
-            dt += 35.0
-            risk_factors.append(f"Impacts background services: {', '.join(context.impacted_services)}")
-
-        # 7. Adaptive Anomaly Penalty (frequency & environment context)
-        if not context.git_repo_detected and base in ["rm", "chmod"] and metadata.is_recursive:
-            dl += 15.0
-            adaptive_applied = True
-            adaptive_reason = "Executed outside version-controlled repository"
-
-        if command_history_count > 3:  # Rapid succession of risky commands
-            sec += 15.0
-            adaptive_applied = True
-            adaptive_reason = adaptive_reason or "High frequency of elevated risk operations in session"
+        if context.recoverability_score < 0.2:
+            interruption_reasons.append("✓ Recovery impossible (no git backup or trash bin)")
 
         # Clamp all vectors 0-100
         dl_c = min(100.0, max(0.0, dl))
@@ -159,7 +162,6 @@ class AdaptiveRiskEngine:
         rec_c = min(100.0, max(0.0, rec))
         priv_c = min(100.0, max(0.0, priv))
 
-        # Overall Risk Score Calculation
         if max(dl_c, sec_c, dt_c, priv_c) == 0:
             overall = 0
         else:
@@ -167,24 +169,46 @@ class AdaptiveRiskEngine:
             avg_vec = (dl_c + sec_c + dt_c + rec_c + priv_c) / 5.0
             overall = int(round(max_vec * 0.6 + avg_vec * 0.4))
 
-        # 4-Tier Threat Hierarchy: SAFE, CAUTION, HIGH, CRITICAL
-        if overall >= 80:
+        # Align overall score with Rule Engine Decision Authority
+        if rule_decision == "BLOCK":
+            overall = max(overall, 85)
             threat_level = "CRITICAL"
-        elif overall >= 60:
-            threat_level = "HIGH"
-        elif overall >= 30:
-            threat_level = "CAUTION"
+        elif rule_decision == "WARN":
+            overall = max(overall, 55)
+            threat_level = "HIGH" if overall >= 60 else "CAUTION"
         else:
-            threat_level = "SAFE"
+            if overall >= 80:
+                threat_level = "CRITICAL"
+            elif overall >= 60:
+                threat_level = "HIGH"
+            elif overall >= 30:
+                threat_level = "CAUTION"
+            else:
+                threat_level = "SAFE"
 
-        # Calculate affected files and size
+        # Failure Likelihood & Recovery Complexity
+        if overall >= 80:
+            fail_like = "Very High"
+            rec_comp = "Critical"
+        elif overall >= 60:
+            fail_like = "High"
+            rec_comp = "High"
+        elif overall >= 30:
+            fail_like = "Medium"
+            rec_comp = "Medium"
+        else:
+            fail_like = "Low"
+            rec_comp = "Low"
+
         total_files = sum(t.file_count for t in context.target_telemetry)
         total_mb = sum(t.total_size_mb for t in context.target_telemetry)
 
         return AdaptiveRiskAssessment(
             overall_risk_score=overall,
             threat_level=threat_level,
-            risk_confidence=0.98,
+            risk_confidence=0.97,
+            failure_likelihood=fail_like,
+            recovery_complexity=rec_comp,
             vectors=RiskVectorBreakdown(
                 data_loss_risk=round(dl_c, 1),
                 security_risk=round(sec_c, 1),
@@ -193,9 +217,11 @@ class AdaptiveRiskEngine:
                 privacy_risk=round(priv_c, 1)
             ),
             primary_risk_factors=list(set(risk_factors)),
-            requires_confirmation=(overall >= 50),
-            adaptive_penalty_applied=adaptive_applied,
-            adaptive_reason=adaptive_reason,
+            evidence=list(set(evidence_list)),
+            interruption_reasons=list(set(interruption_reasons)),
+            requires_confirmation=(overall >= 50 or rule_decision in ["WARN", "BLOCK"]),
+            rule_decision=rule_decision,
+            rule_violations=rule_violations,
             affected_files_count=total_files,
             affected_size_mb=round(total_mb, 2)
         )
