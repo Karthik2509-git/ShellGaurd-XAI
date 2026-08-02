@@ -146,7 +146,14 @@ class SystemContextCollector:
         is_critical = False
         crit_reason = None
         for crit_path, reason in self.CRITICAL_SYSTEM_PATHS.items():
-            if target_str == crit_path or normalized == crit_path or target_str.startswith(crit_path):
+            is_match = False
+            if crit_path in ["/", "/*"]:
+                if target_str in ["/", "/*"] or normalized in ["/", "/*"]:
+                    is_match = True
+            elif target_str == crit_path or normalized == crit_path or target_str.startswith(crit_path + "/"):
+                is_match = True
+
+            if is_match:
                 is_critical = True
                 crit_reason = reason
                 break

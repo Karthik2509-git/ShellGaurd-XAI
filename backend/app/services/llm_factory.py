@@ -1,6 +1,12 @@
 import logging
 from typing import Dict, Any, Optional, List
-import litellm
+
+try:
+    import litellm
+    HAVE_LITELLM = True
+except ImportError:
+    litellm = None
+    HAVE_LITELLM = False
 from app.core.config import settings
 
 logger = logging.getLogger("shellguard.llm")
@@ -14,7 +20,8 @@ class LLMFactory:
     def __init__(self):
         self.primary_model = settings.DEFAULT_LLM_MODEL
         self.fallback_model = settings.FALLBACK_LLM_MODEL
-        litellm.drop_params = True
+        if HAVE_LITELLM and litellm:
+            litellm.drop_params = True
 
     async def generate_completion(
         self, 
@@ -26,6 +33,12 @@ class LLMFactory:
         """
         Execute completion with failover strategy.
         """
+        if not HAVE_LITELLM or not litellm:
+            return {
+                "content": "AI Service offline. Standard deterministic safety rules enforced.",
+                "model_used": "deterministic_offline_guard",
+                "status": "offline_fallback"
+            }
         try:
             # Attempt Primary Model
             logger.info(f"Invoking primary LLM: {self.primary_model}")
