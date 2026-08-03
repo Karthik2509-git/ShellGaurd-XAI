@@ -37,9 +37,13 @@ class DeterministicRuleEngine:
                 elif metadata.is_sudo or is_root:
                     violations.append(f"Rule #103: Root execution targeting OS path '{target}'")
 
-        # Rule 3: Obfuscated Remote Execution Pipe
+        # Rule 3: Obfuscated Remote Execution Pipe or Device Destruction
+        if base in ["dd", "mkfs", "mkfs.ext4", "fdisk"]:
+            violations.append("Rule #104: Low-level disk formatting or device block destruction")
+            return "BLOCK", violations
+
         if metadata.is_obfuscated or ("curl" in base and "| bash" in metadata.clean_command):
-            violations.append("Rule #104: Obfuscated or remote shell code execution pipe")
+            violations.append("Rule #105: Obfuscated or remote shell code execution pipe")
             return "BLOCK", violations
 
         # Rule 4: Global Permissive Permission Grant
