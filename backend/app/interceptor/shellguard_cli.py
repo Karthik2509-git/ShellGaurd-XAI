@@ -129,7 +129,44 @@ class ShellGuardCLI:
                     return "ABORT"
 
             except Exception as e:
-                logger.error(f"ShellGuard CLI evaluation error: {e}")
-                return "EXECUTE"
+                logger.warning(f"Backend API unavailable ({e}). Fallback to local deterministic safety engine.")
+                try:
+                    from app.parser.ast_parser import command_parser
+                    from app.runtime.rules import rule_engine
+                    meta = command_parser.parse(command)
+                    decision, violations = rule_engine.evaluate_rules(meta, is_root=meta.is_sudo)
+                    if decision == "BLOCK":
+                        print(f"\n{ANSIColor.BOLD}{ANSIColor.RED}[ShellGuard Offline Guard] CATASTROPHIC COMMAND BLOCKED{ANSIColor.RESET}")
+                        print(f"  {ANSIColor.BOLD}Target Command:{ANSIColor.RESET} {ANSIColor.YELLOW}{meta.clean_command}{ANSIColor.RESET}")
+                        print(f"  {ANSIColor.RED}Violations:{ANSIColor.RESET} {', '.join(violations)}")
+                        print(f"  {ANSIColor.BOLD}Backend Daemon Status:{ANSIColor.RESET} Offline — Deterministic Rule Engine Active\n")
+                        return "ABORT"
+                    elif decision == "WARN":
+                        print(f"\n{ANSIColor.BOLD}{ANSIColor.YELLOW}[ShellGuard Offline Guard] POTENTIAL RISK WARNING{ANSIColor.RESET}")
+                        print(f"  {ANSIColor.BOLD}Target Command:{ANSIColor.RESET} {ANSIColor.YELLOW}{meta.clean_command}{ANSIColor.RESET}")
+                        print(f"  {ANSIColor.YELLOW}Violations:{ANSIColor.RESET} {', '.join(violations)}\n")
+                        choice = input("Proceed with operation? [y/N]: ").strip().lower()
+                        return "EXECUTE" if choice == "y" else "ABORT"
+                    return "EXECUTE"
+                except Exception as fallback_err:
+                    logger.error(f"Fallback rule engine error: {fallback_err}")
+                    return "EXECUTE"
 
 shellguard_cli = ShellGuardCLI()
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2 or not sys.argv[1].strip():
+        sys.exit(0)
+    target_cmd = sys.argv[1]
+    decision = asyncio.run(shellguard_cli.evaluate_and_prompt(target_cmd))
+    if decision == "ABORT":
+        sys.exit(1)
+    elif decision == "SIMULATE":
+        print(f"{ANSIColor.CYAN}[ShellGuard Simulation] Dry-run complete. System state preserved.{ANSIColor.RESET}")
+        sys.exit(1)
+    elif decision.startswith("ALTERNATIVE:"):
+        alt_cmd = decision.split("ALTERNATIVE:", 1)[1]
+        print(f"{ANSIColor.GREEN}[ShellGuard Alternative] Executing replacement: {alt_cmd}{ANSIColor.RESET}")
+        import subprocess
+        sys.exit(subprocess.call(alt_cmd, shell=True))
+    sys.exit(0)

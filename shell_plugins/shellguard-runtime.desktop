@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=ShellGuard Runtime
+Comment=AI-Powered Linux OS Safety Layer & Terminal Protection
+Exec=shellguard-runtime-daemon
+Icon=security-high
+Terminal=false
+Type=Application
+Categories=System;Security;Utility;
+StartupNotify=true
+X-GNOME-Autostart-enabled=true

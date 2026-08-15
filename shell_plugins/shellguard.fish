@@ -9,8 +9,8 @@ function __shellguard_preexec --on-event fish_preexec
         return 0
     end
 
-    if command -v python >/dev/null 2>&1
-        python -m app.interceptor.shellguard_cli "$cmd"
+    if command -v python3 >/dev/null 2>&1
+        env PYTHONPATH="$HOME/.local/share/shellguard-runtime/backend:$PYTHONPATH" python3 -m app.interceptor.shellguard_cli "$cmd"
         if test $status -ne 0
             echo -e "\033[0;31m[ShellGuard Runtime] Execution blocked by safety policy.\033[0m"
             return 1

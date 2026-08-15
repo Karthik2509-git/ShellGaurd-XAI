@@ -14,8 +14,8 @@ if [ -z "$SHELLGUARD_HOOK_LOADED" ]; then
         fi
 
         # Invoke ShellGuard Interceptor CLI in synchronous evaluation mode
-        if command -v python >/dev/null 2>&1; then
-            python -m app.interceptor.shellguard_cli "$last_cmd"
+        if command -v python3 >/dev/null 2>&1; then
+            PYTHONPATH="$HOME/.local/share/shellguard-runtime/backend:$PYTHONPATH" python3 -m app.interceptor.shellguard_cli "$last_cmd"
             local exit_code=$?
             if [ $exit_code -ne 0 ]; then
                 echo -e "\033[0;31m[ShellGuard Runtime] Execution cancelled by user safety policy.\033[0m"

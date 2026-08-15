@@ -16,7 +16,7 @@ export const DependencyGraph: React.FC<DependencyGraphProps> = ({ data }) => {
     const cmdName = data.metadata.base_command || "command";
     const targets = data.metadata.targets.length > 0 ? data.metadata.targets : ["target"];
     const services = data.context.impacted_services;
-    const riskLevel = data.risk.risk_level;
+    const riskLevel = data.risk.threat_level;
 
     const n: Node[] = [
       {

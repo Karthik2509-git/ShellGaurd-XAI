@@ -10,8 +10,8 @@ if [[ -z "$SHELLGUARD_ZSH_HOOK_LOADED" ]]; then
             return 0
         fi
 
-        if command -v python >/dev/null 2>&1; then
-            python -m app.interceptor.shellguard_cli "$cmd"
+        if command -v python3 >/dev/null 2>&1; then
+            PYTHONPATH="$HOME/.local/share/shellguard-runtime/backend:$PYTHONPATH" python3 -m app.interceptor.shellguard_cli "$cmd"
             if [[ $? -ne 0 ]]; then
                 return 1
             fi

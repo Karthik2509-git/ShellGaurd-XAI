@@ -7,48 +7,98 @@ set -e
 echo "🛡️ Installing ShellGuard Runtime v1.0.0-rc2..."
 
 # 1. XDG Base Directory Structure
-XDG_CONFIG="$HOME/.config/shellguard-runtime"
-XDG_STATE="$HOME/.local/state/shellguard-runtime"
-XDG_CACHE="$HOME/.cache/shellguard-runtime"
+XDG_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/shellguard-runtime"
+XDG_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/shellguard-runtime"
+XDG_CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/shellguard-runtime"
 BIN_DIR="$HOME/.local/bin"
-DESKTOP_DIR="$HOME/.local/share/applications"
-AUTOSTART_DIR="$HOME/.config/autostart"
-SYSTEMD_USER_DIR="$HOME/.config/systemd/user"
+SHARE_DIR="$HOME/.local/share/shellguard-runtime"
+DESKTOP_DIR="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+AUTOSTART_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/autostart"
+SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 
-mkdir -p "$XDG_CONFIG" "$XDG_STATE" "$XDG_CACHE" "$BIN_DIR" "$DESKTOP_DIR" "$AUTOSTART_DIR" "$SYSTEMD_USER_DIR"
-echo "✓ Registered XDG directories in $XDG_CONFIG"
+mkdir -p "$XDG_CONFIG" "$XDG_STATE" "$XDG_CACHE" "$BIN_DIR" "$SHARE_DIR" "$DESKTOP_DIR" "$AUTOSTART_DIR" "$SYSTEMD_USER_DIR"
+echo "✓ Registered XDG directories ($XDG_CONFIG)"
 
-# 2. Copy Desktop Entry & Autostart
-if [ -f "shell_plugins/shellguard-runtime.desktop" ]; then
-    cp "shell_plugins/shellguard-runtime.desktop" "$DESKTOP_DIR/"
-    cp "shell_plugins/shellguard-runtime.desktop" "$AUTOSTART_DIR/"
+# 2. Deploy Application Payload
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+mkdir -p "$SHARE_DIR/backend" "$SHARE_DIR/shell_plugins"
+cp -r "$SCRIPT_DIR/backend/"* "$SHARE_DIR/backend/"
+cp -r "$SCRIPT_DIR/shell_plugins/"* "$SHARE_DIR/shell_plugins/"
+
+# Setup Python Virtual Environment if needed
+if ! python3 -c "import uvicorn, fastapi" >/dev/null 2>&1; then
+    if command -v python3 >/dev/null 2>&1; then
+        echo "ℹ️  Checking Python dependencies..."
+        python3 -m venv "$SHARE_DIR/venv" 2>/dev/null || true
+        if [ -f "$SHARE_DIR/venv/bin/pip" ]; then
+            "$SHARE_DIR/venv/bin/pip" install --quiet -r "$SHARE_DIR/backend/requirements.txt" 2>/dev/null || true
+        else
+            echo "ℹ️  Note: Python dependencies (uvicorn/fastapi) can be installed via: pip3 install -r $SHARE_DIR/backend/requirements.txt"
+        fi
+    fi
+fi
+
+# Create Daemon Binary Wrapper Executable
+cat << 'EOF' > "$BIN_DIR/shellguard-runtime-daemon"
+#!/usr/bin/env bash
+# ShellGuard Runtime Daemon Executable Wrapper
+export PYTHONUNBUFFERED=1
+SHARE_DIR="$HOME/.local/share/shellguard-runtime"
+export PYTHONPATH="$SHARE_DIR/backend:$PYTHONPATH"
+
+if [ -f "$SHARE_DIR/venv/bin/python" ]; then
+    exec "$SHARE_DIR/venv/bin/python" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 "$@"
+else
+    exec python3 -m uvicorn app.main:app --host 127.0.0.1 --port 8000 "$@"
+fi
+EOF
+chmod +x "$BIN_DIR/shellguard-runtime-daemon"
+echo "✓ Created binary wrapper ($BIN_DIR/shellguard-runtime-daemon)"
+
+# 3. Copy Desktop Entry & Autostart
+if [ -f "$SHARE_DIR/shell_plugins/shellguard-runtime.desktop" ]; then
+    cp "$SHARE_DIR/shell_plugins/shellguard-runtime.desktop" "$DESKTOP_DIR/"
+    cp "$SHARE_DIR/shell_plugins/shellguard-runtime.desktop" "$AUTOSTART_DIR/"
     echo "✓ Installed Freedesktop Entry & Autostart"
 fi
 
-# 3. Register Systemd User Service
-if [ -f "shell_plugins/shellguard-runtime.service" ]; then
-    cp "shell_plugins/shellguard-runtime.service" "$SYSTEMD_USER_DIR/"
-    systemctl --user daemon-reload || true
-    systemctl --user enable shellguard-runtime.service || true
-    echo "✓ Registered systemd user service (shellguard-runtime.service)"
+# 4. Register Systemd User Service
+if [ -f "$SHARE_DIR/shell_plugins/shellguard-runtime.service" ]; then
+    cp "$SHARE_DIR/shell_plugins/shellguard-runtime.service" "$SYSTEMD_USER_DIR/"
+    if command -v systemctl >/dev/null 2>&1; then
+        systemctl --user daemon-reload || true
+        systemctl --user enable shellguard-runtime.service || true
+        echo "✓ Registered systemd user service (shellguard-runtime.service)"
+    fi
 fi
 
-# 4. Register Shell Hooks (Bash, Zsh, Fish)
+# 5. Register Shell Hooks (Bash, Zsh, Fish)
+HOOK_CMD="source \"$SHARE_DIR/shell_plugins/shellguard.bash\""
 BASHRC="$HOME/.bashrc"
 if [ -f "$BASHRC" ]; then
     if ! grep -q "shellguard.bash" "$BASHRC"; then
-        echo "source $PWD/shell_plugins/shellguard.bash" >> "$BASHRC"
+        echo "$HOOK_CMD" >> "$BASHRC"
         echo "✓ Shell hook added to $BASHRC"
     fi
 fi
 
+ZSH_HOOK_CMD="source \"$SHARE_DIR/shell_plugins/shellguard.zsh\""
 ZSHRC="$HOME/.zshrc"
 if [ -f "$ZSHRC" ]; then
     if ! grep -q "shellguard.zsh" "$ZSHRC"; then
-        echo "source $PWD/shell_plugins/shellguard.zsh" >> "$ZSHRC"
+        echo "$ZSH_HOOK_CMD" >> "$ZSHRC"
         echo "✓ Shell hook added to $ZSHRC"
     fi
 fi
 
+FISH_HOOK_CMD="source \"$SHARE_DIR/shell_plugins/shellguard.fish\""
+FISHCONFIG="$HOME/.config/fish/config.fish"
+if [ -f "$FISHCONFIG" ]; then
+    if ! grep -q "shellguard.fish" "$FISHCONFIG"; then
+        echo "$FISH_HOOK_CMD" >> "$FISHCONFIG"
+        echo "✓ Shell hook added to $FISHCONFIG"
+    fi
+fi
+
 echo "✅ ShellGuard Runtime v1.0.0-rc2 Installation Complete!"
-echo "Systemd service: systemctl --user start shellguard-runtime"
+echo "To start runtime service: systemctl --user start shellguard-runtime"

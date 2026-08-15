@@ -25,3 +25,14 @@ async def test_nl_api_endpoint():
     assert response.status_code == 200
     data = response.json()
     assert "generated_command" in data
+
+@pytest.mark.anyio
+async def test_cli_backend_offline_deterministic_fallback():
+    """Verifies CLI blocks catastrophic commands via local RuleEngine when backend is offline."""
+    from app.interceptor.shellguard_cli import ShellGuardCLI
+    offline_cli = ShellGuardCLI(backend_url="http://invalid-localhost:99999")
+    decision = await offline_cli.evaluate_and_prompt("sudo rm -rf /etc")
+    assert decision == "ABORT"
+
+    safe_decision = await offline_cli.evaluate_and_prompt("ls -la /tmp")
+    assert safe_decision == "EXECUTE"
