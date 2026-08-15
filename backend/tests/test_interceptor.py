@@ -36,3 +36,27 @@ async def test_cli_backend_offline_deterministic_fallback():
 
     safe_decision = await offline_cli.evaluate_and_prompt("ls -la /tmp")
     assert safe_decision == "EXECUTE"
+
+def test_shellguard_runtime_imports():
+    """Verifies that mandatory ShellGuard dependencies can be imported in runtime."""
+    import httpx
+    import fastapi
+    import uvicorn
+    import bashlex
+    import pydantic
+    assert httpx.__version__ is not None
+
+@pytest.mark.anyio
+async def test_reentrancy_guard_bypass():
+    """Verifies internal ShellGuard commands immediately return EXECUTE without recursion."""
+    decision = await shellguard_cli.evaluate_and_prompt("python3 -m app.interceptor.shellguard_cli 'ls'")
+    assert decision == "EXECUTE"
+
+def test_python_resolution_dependency_guard():
+    """Verifies python interpreter resolution validates importability of mandatory dependencies."""
+    import sys
+    import subprocess
+    cmd = [sys.executable, "-c", "import httpx, fastapi, pydantic, bashlex; print('OK')"]
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    assert res.returncode == 0
+    assert "OK" in res.stdout

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# ShellGuard Runtime v1.0.0-rc2 — Native Linux Installer Script
+# ShellGuard Runtime v1.0.0-rc3 — Native Linux Installer Script
 # Installs Freedesktop Entry, systemd --user service, XDG directories, and shell hooks.
 
 set -e
 
-echo "🛡️ Installing ShellGuard Runtime v1.0.0-rc2..."
+echo "🛡️ Installing ShellGuard Runtime v1.0.0-rc3..."
 
 # 1. XDG Base Directory Structure
 XDG_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/shellguard-runtime"
@@ -25,16 +25,23 @@ mkdir -p "$SHARE_DIR/backend" "$SHARE_DIR/shell_plugins"
 cp -r "$SCRIPT_DIR/backend/"* "$SHARE_DIR/backend/"
 cp -r "$SCRIPT_DIR/shell_plugins/"* "$SHARE_DIR/shell_plugins/"
 
-# Setup Python Virtual Environment if needed
-if ! python3 -c "import uvicorn, fastapi" >/dev/null 2>&1; then
-    if command -v python3 >/dev/null 2>&1; then
-        echo "ℹ️  Checking Python dependencies..."
+# Setup Python Virtual Environment & Install Bundled Dependencies
+if command -v python3 >/dev/null 2>&1; then
+    echo "ℹ️  Configuring Python virtual environment in $SHARE_DIR/venv..."
+    if [ -d "$SHARE_DIR/venv" ] && [ ! -f "$SHARE_DIR/venv/bin/pip" ]; then
+        rm -rf "$SHARE_DIR/venv"
+    fi
+    if [ ! -d "$SHARE_DIR/venv" ]; then
         python3 -m venv "$SHARE_DIR/venv" 2>/dev/null || true
-        if [ -f "$SHARE_DIR/venv/bin/pip" ]; then
-            "$SHARE_DIR/venv/bin/pip" install --quiet -r "$SHARE_DIR/backend/requirements.txt" 2>/dev/null || true
-        else
-            echo "ℹ️  Note: Python dependencies (uvicorn/fastapi) can be installed via: pip3 install -r $SHARE_DIR/backend/requirements.txt"
-        fi
+    fi
+
+    if [ -f "$SHARE_DIR/venv/bin/pip" ]; then
+        echo "ℹ️  Installing bundled Python dependencies..."
+        "$SHARE_DIR/venv/bin/pip" install --quiet -r "$SHARE_DIR/backend/requirements.txt" || echo "⚠️  Warning: Virtual environment pip install returned non-zero exit code."
+    else
+        echo "⚠️  Warning: Could not create Python virtualenv ($SHARE_DIR/venv/bin/pip missing)."
+        echo "   Please install python3-venv / python3-pip on Ubuntu/Debian via:"
+        echo "   sudo apt install -y python3-venv python3-pip"
     fi
 fi
 
@@ -100,5 +107,5 @@ if [ -f "$FISHCONFIG" ]; then
     fi
 fi
 
-echo "✅ ShellGuard Runtime v1.0.0-rc2 Installation Complete!"
+echo "✅ ShellGuard Runtime v1.0.0-rc3 Installation Complete!"
 echo "To start runtime service: systemctl --user start shellguard-runtime"

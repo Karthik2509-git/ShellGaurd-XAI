@@ -48,7 +48,7 @@ export const TraySystemBar: React.FC<TraySystemBarProps> = ({
         <div className="absolute right-0 mt-2 w-56 bg-[#111827] border border-gray-800 rounded-xl shadow-2xl p-1.5 z-50 text-xs text-gray-200 animate-in fade-in slide-in-from-top-2 duration-150">
           <div className="px-3 py-2 border-b border-gray-800 font-bold text-[11px] text-gray-400 uppercase tracking-wider flex items-center justify-between">
             <span>System Tray Applet</span>
-            <span className="text-emerald-400 font-mono text-[9px]">v1.0.0-rc2</span>
+            <span className="text-emerald-400 font-mono text-[9px]">v1.0.0-rc3</span>
           </div>
 
           <div className="py-1 space-y-0.5">

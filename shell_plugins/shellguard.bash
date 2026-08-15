@@ -6,18 +6,46 @@ if [ -z "$SHELLGUARD_HOOK_LOADED" ]; then
     export SHELLGUARD_HOOK_LOADED=1
 
     _shellguard_preexec() {
-        local last_cmd="$BASH_COMMAND"
-
-        # Skip internal/empty/read-only safe queries
-        if [[ "$last_cmd" =~ ^(ls|pwd|cd|echo|cat|clear|history|which|whoami) ]]; then
+        # Re-entrancy Guard: Ignore internal ShellGuard processes
+        if [ "${SHELLGUARD_INTERNAL:-0}" -eq 1 ]; then
             return 0
         fi
 
-        # Invoke ShellGuard Interceptor CLI in synchronous evaluation mode
-        if command -v python3 >/dev/null 2>&1; then
-            PYTHONPATH="$HOME/.local/share/shellguard-runtime/backend:$PYTHONPATH" python3 -m app.interceptor.shellguard_cli "$last_cmd"
-            local exit_code=$?
-            if [ $exit_code -ne 0 ]; then
+        local last_cmd="$BASH_COMMAND"
+
+        # Re-entrancy & Internal Command Bypass
+        if [ -z "$last_cmd" ] || [[ "$last_cmd" =~ _shellguard|shellguard-runtime|app\.interceptor\.shellguard_cli|uvicorn ]]; then
+            return 0
+        fi
+
+        # Fast-path bypass for read-only safe queries
+        if [[ "$last_cmd" =~ ^(ls|pwd|cd|echo|cat|clear|history|which|whoami)(\ |$) ]]; then
+            return 0
+        fi
+
+        # Deterministic Python Binary Resolution with Dependency Verification
+        local py_bin=""
+        local venv_py="$HOME/.local/share/shellguard-runtime/venv/bin/python"
+        local venv_py3="$HOME/.local/share/shellguard-runtime/venv/bin/python3"
+
+        if [ -x "$venv_py" ] && "$venv_py" -c "import httpx, fastapi, pydantic, bashlex" >/dev/null 2>&1; then
+            py_bin="$venv_py"
+        elif [ -x "$venv_py3" ] && "$venv_py3" -c "import httpx, fastapi, pydantic, bashlex" >/dev/null 2>&1; then
+            py_bin="$venv_py3"
+        elif command -v python3 >/dev/null 2>&1 && python3 -c "import httpx, fastapi, pydantic, bashlex" >/dev/null 2>&1; then
+            py_bin="python3"
+        elif command -v python >/dev/null 2>&1 && python -c "import httpx, fastapi, pydantic, bashlex" >/dev/null 2>&1; then
+            py_bin="python"
+        else
+            # Fail-safe: No valid ShellGuard Python environment available.
+            return 0
+        fi
+
+        # Invoke ShellGuard Interceptor CLI with Re-entrancy Guard
+        SHELLGUARD_INTERNAL=1 PYTHONPATH="$HOME/.local/share/shellguard-runtime/backend:$PYTHONPATH" "$py_bin" -m app.interceptor.shellguard_cli "$last_cmd"
+        local exit_code=$?
+        if [ $exit_code -ne 0 ]; then
+            if [ $exit_code -eq 1 ]; then
                 echo -e "\033[0;31m[ShellGuard Runtime] Execution cancelled by user safety policy.\033[0m"
                 return 1
             fi

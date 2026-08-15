@@ -39,7 +39,7 @@ export const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div className="bg-gray-900 p-2.5 rounded-xl border border-gray-800">
               <span className="text-[10px] text-gray-500 uppercase block font-bold">Semantic Version</span>
-              <span className="font-mono font-bold text-white">v1.0.0-rc2</span>
+              <span className="font-mono font-bold text-white">v1.0.0-rc3</span>
             </div>
             <div className="bg-gray-900 p-2.5 rounded-xl border border-gray-800">
               <span className="text-[10px] text-gray-500 uppercase block font-bold">Build Number</span>

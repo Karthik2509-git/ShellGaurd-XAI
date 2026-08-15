@@ -1,4 +1,4 @@
-# 🛡️ ShellGuard Runtime `v1.0.0-rc2`
+# 🛡️ ShellGuard Runtime `v1.0.0-rc3`
 
 > **"Before Linux executes a command, ShellGuard Runtime understands what the user actually means."**  
 > *Linux understands commands. ShellGuard Runtime understands intentions.*
@@ -104,7 +104,7 @@ python -m pytest backend/tests
 
 ## 📜 Release Information
 
-- **Semantic Version**: `v1.0.0-rc2`
+- **Semantic Version**: `v1.0.0-rc3`
 - **Build Number**: `20260803.2`
 - **Commit Hash**: `dd9f988`
 - **License**: MIT
