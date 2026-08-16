@@ -60,3 +60,112 @@ def test_python_resolution_dependency_guard():
     res = subprocess.run(cmd, capture_output=True, text=True)
     assert res.returncode == 0
     assert "OK" in res.stdout
+
+@pytest.mark.anyio
+async def test_online_backend_block_decision_enforcement(monkeypatch):
+    """Verifies that an online backend decision of BLOCK returns ABORT without calling input()."""
+    from app.interceptor.shellguard_cli import ShellGuardCLI
+    import httpx
+
+    mock_payload = {
+        "risk": {
+            "overall_risk_score": 85,
+            "threat_level": "CRITICAL",
+            "system_trust_level": "Blocked",
+            "requires_confirmation": True,
+            "rule_decision": "BLOCK",
+            "policy_action": "BLOCK",
+            "primary_risk_factors": ["Modification of /etc"],
+            "vectors": {
+                "data_loss_risk": 90,
+                "security_risk": 85,
+                "downtime_risk": 80,
+                "recoverability_risk": 95,
+                "privacy_risk": 20
+            }
+        },
+        "explanation": {"eli5_summary": "Dangerous command!"}
+    }
+
+    class MockResponse:
+        status_code = 200
+        def json(self):
+            return mock_payload
+
+    class MockAsyncClient:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
+        async def post(self, url, json, timeout):
+            return MockResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", MockAsyncClient)
+
+    input_called = False
+    def mock_input(prompt=""):
+        nonlocal input_called
+        input_called = True
+        return "y"
+
+    monkeypatch.setattr("builtins.input", mock_input)
+
+    cli = ShellGuardCLI(backend_url="http://mock-daemon:8000")
+    decision = await cli.evaluate_and_prompt("sudo rm -rf /etc")
+
+    assert decision == "ABORT"
+    assert not input_called, "input() must NEVER be called when backend returns BLOCK"
+
+@pytest.mark.anyio
+async def test_online_backend_policy_action_block_enforcement(monkeypatch):
+    """Verifies that policy_action='BLOCK' returns ABORT without prompting."""
+    from app.interceptor.shellguard_cli import ShellGuardCLI
+    import httpx
+
+    mock_payload = {
+        "risk": {
+            "overall_risk_score": 90,
+            "threat_level": "CRITICAL",
+            "requires_confirmation": True,
+            "rule_decision": "PASS",
+            "policy_action": "BLOCK",
+            "primary_risk_factors": ["Policy Violation"],
+            "vectors": {
+                "data_loss_risk": 90,
+                "security_risk": 85,
+                "downtime_risk": 80,
+                "recoverability_risk": 95,
+                "privacy_risk": 20
+            }
+        },
+        "explanation": {"eli5_summary": "Policy blocked operation"}
+    }
+
+    class MockResponse:
+        status_code = 200
+        def json(self):
+            return mock_payload
+
+    class MockAsyncClient:
+        async def __aenter__(self):
+            return self
+        async def __aexit__(self, *args):
+            pass
+        async def post(self, url, json, timeout):
+            return MockResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", MockAsyncClient)
+
+    input_called = False
+    def mock_input(prompt=""):
+        nonlocal input_called
+        input_called = True
+        return "y"
+
+    monkeypatch.setattr("builtins.input", mock_input)
+
+    cli = ShellGuardCLI(backend_url="http://mock-daemon:8000")
+    decision = await cli.evaluate_and_prompt("rm -rf /")
+
+    assert decision == "ABORT"
+    assert not input_called

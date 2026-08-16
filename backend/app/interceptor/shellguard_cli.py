@@ -105,6 +105,18 @@ class ShellGuardCLI:
                 data = res.json()
                 risk = data.get("risk", {})
 
+                # Check explicit hard-block policy decision first
+                rule_dec = risk.get("rule_decision") or data.get("rule_decision")
+                policy_act = risk.get("policy_action") or data.get("policy_action")
+                if rule_dec == "BLOCK" or policy_act == "BLOCK":
+                    self.print_intercept_banner(data)
+                    print(f"\n{ANSIColor.BOLD}{ANSIColor.RED}[ShellGuard Runtime] CATASTROPHIC COMMAND BLOCKED BY SAFETY POLICY{ANSIColor.RESET}")
+                    print(f"  {ANSIColor.BOLD}Target Command:{ANSIColor.RESET} {ANSIColor.YELLOW}{command}{ANSIColor.RESET}")
+                    violations = risk.get("interruption_reasons") or risk.get("primary_risk_factors") or ["Critical policy violation"]
+                    print(f"  {ANSIColor.RED}Violations:{ANSIColor.RESET} {', '.join(violations)}")
+                    print(f"  {ANSIColor.BOLD}Decision Authority:{ANSIColor.RESET} ShellGuard AI Safety Engine — Hard Block Enforced\n")
+                    return "ABORT"
+
                 if not risk.get("requires_confirmation", False):
                     return "EXECUTE"
 
